@@ -33,7 +33,13 @@ export default function NewRecord() {
   const [latitude, setLatitude] = useState<number | undefined>(39.9042);
   const [longitude, setLongitude] = useState<number | undefined>(116.4074);
   const [locationName, setLocationName] = useState<string | undefined>('北京市');
+  const getLocalDatetimeLocal = (): string => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  };
   const [observedAt, setObservedAt] = useState<string>(new Date().toISOString());
+  const [observedAtLocal, setObservedAtLocal] = useState<string>(getLocalDatetimeLocal());
   const [notes, setNotes] = useState('');
 
   const onChange = (field: string, value: any) => {
@@ -51,7 +57,14 @@ export default function NewRecord() {
       case 'latitude': return setLatitude(value);
       case 'longitude': return setLongitude(value);
       case 'locationName': return setLocationName(value);
-      case 'observedAt': return setObservedAt(value);
+      case 'observedAtLocalStr':
+        setObservedAtLocal(value);
+        if (value) {
+          setObservedAt(new Date(value).toISOString());
+        } else {
+          setObservedAt('');
+        }
+        return;
       case 'notes': return setNotes(value);
     }
   };
@@ -63,6 +76,7 @@ export default function NewRecord() {
 
   const handleSubmit = () => {
     if (!genusId) return;
+    const finalObservedAt = observedAt || new Date().toISOString();
     addRecord({
       genusId,
       species: species || undefined,
@@ -78,7 +92,7 @@ export default function NewRecord() {
       latitude,
       longitude,
       locationName: locationName || undefined,
-      observedAt,
+      observedAt: finalObservedAt,
       notes: notes || undefined,
     });
     navigate('/');
@@ -181,6 +195,7 @@ export default function NewRecord() {
               longitude={longitude}
               locationName={locationName}
               observedAt={observedAt}
+              observedAtLocal={observedAtLocal}
               onChange={onChange}
             />
           </div>

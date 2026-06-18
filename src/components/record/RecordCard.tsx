@@ -162,7 +162,15 @@ export default function RecordCard({ record }: Props) {
                     <p className="text-sm opacity-80 mt-1 font-mono">{genus?.latinName} · {genus?.abbreviation}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                    <button
+                      className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert('编辑功能即将开放，敬请期待～');
+                        setShowDetail(false);
+                      }}
+                      title="编辑记录"
+                    >
                       <Edit size={17} />
                     </button>
                     <button

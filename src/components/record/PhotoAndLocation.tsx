@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { formatDateTime } from '@/utils/dateUtils';
 import { formatCoordinates } from '@/utils/geoUtils';
 import { getCityByCoords } from '@/utils/geoUtils';
-import { Camera, MapPin, Calendar, Upload, X, Crosshair, Loader2 } from 'lucide-react';
+import { Camera, MapPin, Calendar, Upload, X, Crosshair, Loader2, RotateCcw } from 'lucide-react';
 
 interface Props {
   photo: string | undefined;
@@ -11,6 +11,7 @@ interface Props {
   longitude: number | undefined;
   locationName: string | undefined;
   observedAt: string;
+  observedAtLocal: string;
   onChange: (field: string, value: any) => void;
 }
 
@@ -180,14 +181,43 @@ export default function PhotoAndLocation(props: Props) {
             <Calendar size={16} className="text-amber-500" />
             拍摄/观察时间
           </label>
-          <input
-            type="datetime-local"
-            className="input-field"
-            value={props.observedAt.slice(0, 16)}
-            onChange={(e) => props.onChange('observedAt', new Date(e.target.value).toISOString())}
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              className="input-field flex-1"
+              value={props.observedAtLocal}
+              onChange={(e) => props.onChange('observedAtLocalStr', e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn-ghost !px-3 whitespace-nowrap"
+              onClick={() => {
+                const now = new Date();
+                const pad = (n: number) => String(n).padStart(2, '0');
+                const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                props.onChange('observedAtLocalStr', localStr);
+              }}
+              title="重置为当前时间"
+            >
+              <RotateCcw size={14} />
+              <span className="hidden sm:inline">现在</span>
+            </button>
+            {props.observedAtLocal && (
+              <button
+                type="button"
+                className="btn-ghost !px-3 whitespace-nowrap hover:!bg-rose-50"
+                onClick={() => props.onChange('observedAtLocalStr', '')}
+                title="清除时间"
+              >
+                <X size={14} />
+                <span className="hidden sm:inline">清除</span>
+              </button>
+            )}
+          </div>
           <p className="text-xs text-slate-500 mt-2">
-            🕐 当前选择: {formatDateTime(props.observedAt)}
+            🕐 {props.observedAtLocal
+              ? `当前选择: ${formatDateTime(props.observedAt)}`
+              : '未选择时间'}
           </p>
         </div>
 
