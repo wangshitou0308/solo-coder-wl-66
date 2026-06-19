@@ -59,7 +59,7 @@ export default function RecentTimeline({ records }: { records: ObservationRecord
                 key={r.id}
                 className="relative pl-14 sm:pl-20 cursor-pointer group animate-fade-in"
                 style={{ animationDelay: `${i * 80}ms` }}
-                onClick={() => navigate('/records')}
+                onClick={() => navigate(`/record/${r.id}`)}
               >
                 <div
                   className="absolute left-3 sm:left-5 top-3 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-base sm:text-lg shadow-lg border-2 border-white z-10 transition-transform group-hover:scale-110"

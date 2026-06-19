@@ -1,13 +1,15 @@
 
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCloudStore } from '@/store/useCloudStore';
 import { CLOUD_GENERA, getGenusById } from '@/data/cloudGenera';
 import Card from '@/components/ui/Card';
 import { latLngToXY, formatCoordinates } from '@/utils/geoUtils';
 import type { ObservationRecord } from '@/types';
-import { MapPin, Layers, Info, Globe } from 'lucide-react';
+import { MapPin, Layers, Info, Globe, ArrowRight } from 'lucide-react';
 
 export default function MapView() {
+  const navigate = useNavigate();
   const records = useCloudStore((s) => s.records);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -281,6 +283,13 @@ export default function MapView() {
                   <p><span className="text-slate-400">🌡️ 温湿度：</span>{selected.temperature}°C / {selected.humidity}%</p>
                   <p><span className="text-slate-400">📏 云底高度：</span>{(selected.cloudBaseHeight / 1000).toFixed(1)} km</p>
                 </div>
+                <button
+                  className="w-full mt-4 btn-primary !py-2 !text-sm"
+                  onClick={() => navigate(`/record/${selected.id}`)}
+                >
+                  查看完整详情
+                  <ArrowRight size={14} />
+                </button>
               </div>
             </Card>
           )}

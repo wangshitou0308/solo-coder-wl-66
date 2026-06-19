@@ -56,9 +56,14 @@ export interface ObservationRecord {
   locationName?: string;
   observedAt: string;
   notes?: string;
+  tags: string[];
+  isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+export type SortField = 'observedAt' | 'cloudBaseHeight' | 'cloudCover' | 'temperature' | 'createdAt';
+export type SortOrder = 'asc' | 'desc';
 
 export interface GenusCoverage {
   genusId: string;
@@ -86,4 +91,9 @@ export interface RecordFilters {
   endDate?: string;
   genera?: string[];
   weather?: WeatherType[];
+  searchQuery?: string;
+  sortField?: SortField;
+  sortOrder?: SortOrder;
+  tags?: string[];
+  favoriteOnly?: boolean;
 }

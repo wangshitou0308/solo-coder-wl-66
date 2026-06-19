@@ -1,13 +1,13 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCloudStore } from '@/store/useCloudStore';
 import Card from '@/components/ui/Card';
 import GenusSelector from '@/components/record/GenusSelector';
 import WeatherForm from '@/components/record/WeatherForm';
 import PhotoAndLocation from '@/components/record/PhotoAndLocation';
 import type { WeatherType, WindDirection } from '@/types';
-import { ArrowLeft, ArrowRight, Check, CloudUpload, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CloudUpload, Sparkles, Edit, Copy } from 'lucide-react';
 
 const STEPS = [
   { key: 'genus', label: '选择云属', icon: CloudUpload },
@@ -15,9 +15,26 @@ const STEPS = [
   { key: 'media', label: '照片与位置', icon: Check },
 ];
 
+const getLocalDatetimeLocal = (iso?: string): string => {
+  const d = iso ? new Date(iso) : new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export default function NewRecord() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const copyId = searchParams.get('copy');
   const addRecord = useCloudStore((s) => s.addRecord);
+  const updateRecord = useCloudStore((s) => s.updateRecord);
+  const getRecordById = useCloudStore((s) => s.getRecordById);
+
+  const isEditMode = !!id;
+  const isCopyMode = !!copyId;
+  const sourceRecordId = id || copyId;
+  const sourceRecord = sourceRecordId ? getRecordById(sourceRecordId) : undefined;
+
   const [step, setStep] = useState(0);
   const [genusId, setGenusId] = useState('');
   const [species, setSpecies] = useState('');
@@ -33,14 +50,37 @@ export default function NewRecord() {
   const [latitude, setLatitude] = useState<number | undefined>(39.9042);
   const [longitude, setLongitude] = useState<number | undefined>(116.4074);
   const [locationName, setLocationName] = useState<string | undefined>('北京市');
-  const getLocalDatetimeLocal = (): string => {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  };
   const [observedAt, setObservedAt] = useState<string>(new Date().toISOString());
   const [observedAtLocal, setObservedAtLocal] = useState<string>(getLocalDatetimeLocal());
   const [notes, setNotes] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loaded, setLoaded] = useState(!sourceRecordId);
+
+  useEffect(() => {
+    if (sourceRecord && !loaded) {
+      setGenusId(sourceRecord.genusId);
+      setSpecies(sourceRecord.species || '');
+      setVariety(sourceRecord.variety || '');
+      setCloudBaseHeight(sourceRecord.cloudBaseHeight);
+      setCloudCover(sourceRecord.cloudCover);
+      setWeather(sourceRecord.weather);
+      setTemperature(sourceRecord.temperature);
+      setHumidity(sourceRecord.humidity);
+      setWindDirection(sourceRecord.windDirection);
+      setWindSpeed(sourceRecord.windSpeed);
+      setPhoto(sourceRecord.photo);
+      setLatitude(sourceRecord.latitude);
+      setLongitude(sourceRecord.longitude);
+      setLocationName(sourceRecord.locationName);
+      setObservedAt(sourceRecord.observedAt);
+      setObservedAtLocal(getLocalDatetimeLocal(sourceRecord.observedAt));
+      setNotes(sourceRecord.notes || '');
+      setTags(isCopyMode ? [...(sourceRecord.tags || [])] : [...(sourceRecord.tags || [])]);
+      setIsFavorite(isEditMode ? sourceRecord.isFavorite : false);
+      setLoaded(true);
+    }
+  }, [sourceRecord, loaded, isEditMode, isCopyMode]);
 
   const onChange = (field: string, value: any) => {
     switch (field) {
@@ -77,7 +117,7 @@ export default function NewRecord() {
   const handleSubmit = () => {
     if (!genusId) return;
     const finalObservedAt = observedAt || new Date().toISOString();
-    addRecord({
+    const recordData = {
       genusId,
       species: species || undefined,
       variety: variety || undefined,
@@ -94,23 +134,56 @@ export default function NewRecord() {
       locationName: locationName || undefined,
       observedAt: finalObservedAt,
       notes: notes || undefined,
-    });
-    navigate('/');
+      tags,
+      isFavorite,
+    };
+
+    if (isEditMode && id) {
+      updateRecord(id, recordData);
+      navigate(`/record/${id}`);
+    } else {
+      addRecord(recordData);
+      navigate('/records');
+    }
   };
+
+  if (!loaded) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-5xl opacity-40 animate-float mb-4">☁️</div>
+        <p className="text-slate-500">加载记录数据中...</p>
+      </div>
+    );
+  }
+
+  const titlePrefix = isEditMode ? '编辑观云记录' : isCopyMode ? '复制新建观云记录' : '新建观云记录';
+  const titleIcon = isEditMode ? <Edit size={24} /> : isCopyMode ? <Copy size={24} /> : null;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center gap-4 animate-fade-in">
-        <button className="btn-ghost" onClick={() => navigate('/')}>
+      <div className="flex items-center gap-4 animate-fade-in flex-wrap">
+        <button className="btn-ghost" onClick={() => navigate(isEditMode && id ? `/record/${id}` : '/records')}>
           <ArrowLeft size={18} />
           返回
         </button>
         <div className="flex-1">
-          <h1 className="font-display font-bold text-2xl sm:text-3xl text-gradient-sky">
-            新建观云记录
+          <h1 className="font-display font-bold text-2xl sm:text-3xl text-gradient-sky flex items-center gap-2">
+            {titleIcon}
+            {titlePrefix}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">按照 WMO 国际云图分类标准记录你的云彩观察</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {isEditMode
+              ? '修改已有观云记录的信息'
+              : isCopyMode
+              ? '基于已有记录快速创建一条新记录'
+              : '按照 WMO 国际云图分类标准记录你的云彩观察'}
+          </p>
         </div>
+        {sourceRecord && (
+          <span className="chip !bg-amber-50 !border-amber-200 !text-amber-700">
+            {isEditMode ? '编辑模式' : '复制模式'} · 来源记录已加载
+          </span>
+        )}
       </div>
 
       <div className="glass-card !p-4 sm:!p-5 animate-fade-in">
@@ -198,10 +271,20 @@ export default function NewRecord() {
               observedAtLocal={observedAtLocal}
               onChange={onChange}
             />
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <label className="block text-sm font-bold text-slate-700 mb-2">📝 观察备注（可选）</label>
+              <textarea
+                rows={3}
+                className="input-field resize-none"
+                placeholder="记录当天的特殊天气现象、云彩变化过程、你的观察感受..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-10 pt-6 border-t border-slate-200">
+        <div className="flex items-center justify-between mt-10 pt-6 border-t border-slate-200 flex-wrap gap-3">
           <button
             className="btn-ghost disabled:opacity-40"
             disabled={step === 0}
@@ -222,7 +305,7 @@ export default function NewRecord() {
           ) : (
             <button className="btn-sunset !py-3 !px-7" onClick={handleSubmit}>
               <Check size={18} />
-              保存观云记录
+              {isEditMode ? '保存修改' : isCopyMode ? '创建副本' : '保存观云记录'}
             </button>
           )}
         </div>
